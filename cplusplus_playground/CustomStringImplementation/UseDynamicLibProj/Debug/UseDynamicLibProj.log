@@ -1,0 +1,3 @@
+﻿  ex23.cpp
+C:\Users\Razvan\Desktop\C++_Projects\Source Codes\C&C++\UseDynamicLibSol\UseDynamicLibProj\ex23.cpp(7,1): warning C4326: return type of 'main' should be 'int' instead of 'void'
+  UseDynamicLibProj.vcxproj -> C:\Users\Razvan\Desktop\C++_Projects\Source Codes\C&C++\UseDynamicLibSol\Debug\UseDynamicLibProj.exe
