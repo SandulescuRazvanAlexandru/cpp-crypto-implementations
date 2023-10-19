@@ -1,331 +1,237 @@
 #include <stdio.h>
+#include <iostream>
+#include <openssl/ssl.h>
 #include <malloc.h>
-#include <openssl/aes.h>
+#include <openssl/rsa.h>
 #include <openssl/sha.h>
 #include <openssl/applink.c>
 #include <openssl/pem.h>
-#include <openssl/rsa.h>
-#include <vector>
-#include <string>
-#include <iostream>
-#include <fstream>
+#include <openssl/aes.h>
 
-#define MESSAGE_CHUNK 160 
-#define KEY_LENGTH 16
 
-void printHash(unsigned char hash[]) {
-	int count = 0;
-	for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-		printf("%02X ", hash[i]);
-	}
-}
+#define MESSAGE_CHUNK 256
 
-void generateFileHashValue(FILE* file, unsigned char* hash) {
-	unsigned char* fileBuffer = NULL;
+void computeSHA256(int fSize, unsigned char* buffer, char sha256[]) {
 	SHA256_CTX ctx;
 	SHA256_Init(&ctx);
+	unsigned char sha256digested[SHA256_DIGEST_LENGTH];
 
-	fseek(file, 0, SEEK_END);
-	int fileLength = ftell(file);
-	fseek(file, 0, SEEK_SET);
-	//printf("%d\n", fileLength);
-
-	fileBuffer = (unsigned char*)malloc(fileLength);
-	fread(fileBuffer, fileLength, 1, file);
-	unsigned char* tmpBuffer = fileBuffer;
-
-	while (fileLength > 0) {
-		if (fileLength > MESSAGE_CHUNK) {
-			SHA256_Update(&ctx, tmpBuffer, MESSAGE_CHUNK);
+	unsigned char* tmpB = buffer;
+	while (fSize > 0) {
+		if (fSize > MESSAGE_CHUNK) {
+			SHA256_Update(&ctx, tmpB, MESSAGE_CHUNK);
 		}
 		else {
-			SHA256_Update(&ctx, tmpBuffer, fileLength);
+			SHA256_Update(&ctx, tmpB, fSize);
 		}
-		fileLength -= MESSAGE_CHUNK;
-		tmpBuffer += MESSAGE_CHUNK;
+		fSize -= MESSAGE_CHUNK;
+		tmpB += MESSAGE_CHUNK;
 	}
 
-	SHA256_Final(hash, &ctx);
-
-}
-
-bool verifyFileHashValue(FILE* file, unsigned char* hashValue) {
-	unsigned char fileDigest[SHA256_DIGEST_LENGTH];
-	generateFileHashValue(file, fileDigest);
-
-	return (memcmp(hashValue, fileDigest, SHA256_DIGEST_LENGTH) == 0);
-}
-
-void decryptAES(FILE* encryptedFile, FILE* decryptedFile, FILE* keyFile) {
-	fseek(encryptedFile, 0, SEEK_END);
-	long int encryptedFileLength = ftell(encryptedFile) - 4;
-	fseek(encryptedFile, 0, SEEK_SET);
-	long int decryptedFileLength = 0;
-	fread(&decryptedFileLength, sizeof(decryptedFileLength), 1, encryptedFile);
-	//printf("%d\n", encryptedFileLength);
-	//printf("%d\n", decryptedFileLength);
-
-	unsigned char* inputBuffer = (unsigned char*)malloc(encryptedFileLength);
-	unsigned char* outputBuffer = (unsigned char*)malloc(encryptedFileLength);
-	memset(inputBuffer, 0x00, encryptedFileLength);
-	fread(inputBuffer, encryptedFileLength, 1, encryptedFile);
-
-	unsigned char fileDecryptionKey[KEY_LENGTH];
-	fread(fileDecryptionKey, 1, 128, keyFile);
-	//printHash(fileDecryptionKey);
-
-	AES_KEY aesKey;
-	unsigned char IV[KEY_LENGTH];
-	AES_set_decrypt_key(fileDecryptionKey, 128, &aesKey);
-	memset(&IV, 0x01, sizeof(IV));
-	AES_cbc_encrypt(inputBuffer, outputBuffer, encryptedFileLength, &aesKey, IV, AES_DECRYPT);
-	fwrite(outputBuffer, decryptedFileLength, 1, decryptedFile);
-
-	free(outputBuffer);
-	free(inputBuffer);
-}
-
-void encryptAES(FILE* initialFile, FILE* encryptedFile, FILE* keyFile) {
-	fseek(initialFile, 0, SEEK_END);
-	long int initialFileLength = ftell(initialFile);
-	fseek(initialFile, 0, SEEK_SET);
-
-	long int encryptedFileLength = 0;
-	if ((initialFileLength % KEY_LENGTH) == 0) {
-		encryptedFileLength = initialFileLength;
-	}
-	else {
-		encryptedFileLength = ((initialFileLength / KEY_LENGTH) * KEY_LENGTH) + KEY_LENGTH;
+	SHA256_Final(sha256digested, &ctx);
+	for (int j = 0; j < SHA256_DIGEST_LENGTH; j++) {
+		sprintf(sha256 + (j * 2), "%02x", sha256digested[j]);
+		//printf("%02x", sha256digested[j]);
 	}
 
-	unsigned char* inputBuffer = (unsigned char*)malloc(encryptedFileLength);
-	unsigned char* outputBuffer = (unsigned char*)malloc(encryptedFileLength);
-	memset(inputBuffer, 0x00, encryptedFileLength);
-	fread(inputBuffer, initialFileLength, 1, initialFile);
-
-	unsigned char fileEncryptionKey[KEY_LENGTH];
-	fread(fileEncryptionKey, 1, 128, keyFile);
-	//printHash(fileEncryptionKey);
-
-	AES_KEY aesKey;
-	unsigned char IV[KEY_LENGTH];
-	AES_set_encrypt_key(fileEncryptionKey, 128, &aesKey);
-	memset(&IV, 0x01, sizeof(IV));
-	AES_cbc_encrypt(inputBuffer, outputBuffer, encryptedFileLength, &aesKey, IV, AES_ENCRYPT);
-
-	fwrite(&initialFileLength, sizeof(initialFileLength), 1, encryptedFile);
-	fwrite(outputBuffer, encryptedFileLength, 1, encryptedFile);
-
-	free(inputBuffer);
-	free(outputBuffer);
 }
 
-void decryptRSA(FILE* encryptedFile, FILE* decryptedFile, int decryptedFileSize, FILE* privateKeyFile) {
-	RSA* privateKey;
-	privateKey = PEM_read_RSAPrivateKey(privateKeyFile, NULL, NULL, NULL);
-	int privateKeySize = RSA_size(privateKey);
+char* decryptSession(char sessionKey[], char privateKey[]) {
 
-	unsigned char* e_data = NULL;
-	unsigned char* last_data = NULL;
+	char privateKeyS[] = "sStudent.pem";
+	FILE* privateKEY;
+	RSA* privateRSAKEY = RSA_new();
+	privateKEY = fopen(privateKeyS, "r");
+	if (privateKEY == NULL) {
+		printf("\nCan't open the file!\n");
+	}
+	privateRSAKEY = PEM_read_RSAPrivateKey(privateKEY, NULL, NULL, NULL);
 
-	e_data = (unsigned char*)malloc(privateKeySize);
-	last_data = (unsigned char*)malloc(privateKeySize);
+	fclose(privateKEY);
 
-	fseek(encryptedFile, 0, SEEK_END);
-	int encryptedFileLength = ftell(encryptedFile);
-	fseek(encryptedFile, 0, SEEK_SET);
+	// Session file data
+	unsigned char* sessionData = (unsigned char*)malloc(RSA_size(privateRSAKEY));
+	unsigned char* lastSessionData = (unsigned char*)malloc(RSA_size(privateRSAKEY));
 
-	int maxChunks = encryptedFileLength / privateKeySize;
+	// OPEN FILE SESSIONKEY
+	FILE* sessionKEY = fopen(sessionKey, "rb");
+	fseek(sessionKEY, 0, SEEK_END);
+	long int accSize2 = ftell(sessionKEY);
+	fseek(sessionKEY, 0, SEEK_SET);
+
+	int maxChunks = accSize2 / RSA_size(privateRSAKEY);
 	int currentChunk = 1;
 
-	if (encryptedFileLength != privateKeySize) {
-		while (fread_s(e_data, privateKeySize, sizeof(unsigned char), privateKeySize, encryptedFile) == privateKeySize) {
+	if (accSize2 != RSA_size(privateRSAKEY)) {
+		while (fread_s(sessionData, RSA_size(privateRSAKEY), sizeof(unsigned char), RSA_size(privateRSAKEY), sessionKEY) == RSA_size(privateRSAKEY)) { //read one single encrypted complete data block
 			if (currentChunk != maxChunks) {
-				RSA_private_decrypt(privateKeySize, e_data, last_data, privateKey, RSA_NO_PADDING);
-				fwrite(last_data, sizeof(unsigned char), privateKeySize, decryptedFile);
+				RSA_private_decrypt(RSA_size(privateRSAKEY), sessionData, lastSessionData, privateRSAKEY, RSA_NO_PADDING);  //decpryption of the complete encrypted data block => no padding needed
+				fwrite(lastSessionData, sizeof(unsigned char), RSA_size(privateRSAKEY), sessionKEY);
 				currentChunk++;
 			}
 		}
 	}
 	else {
-		fread_s(e_data, privateKeySize, sizeof(unsigned char), privateKeySize, encryptedFile);
+		fread_s(sessionData, RSA_size(privateRSAKEY), sizeof(unsigned char), RSA_size(privateRSAKEY), sessionKEY);
 	}
 
-	RSA_private_decrypt(privateKeySize, e_data, last_data, privateKey, RSA_PKCS1_PADDING);
-	fwrite(last_data, sizeof(unsigned char), decryptedFileSize % privateKeySize, decryptedFile);
-	//printHash(e_data);
-	//fwrite(last_data, sizeof(unsigned char), privateKeySize, decryptedFile);
 
-	free(last_data);
-	free(e_data);
+	// output file buffer
+	unsigned char* outBuffer = (unsigned char*)malloc(RSA_size(privateRSAKEY));
+	RSA_private_decrypt(RSA_size(privateRSAKEY), sessionData, outBuffer, privateRSAKEY, RSA_PKCS1_PADDING);
 
-	RSA_free(privateKey);
+	printf("\n HEX VALUE: ");
+	unsigned char* keyFinal = (unsigned char*)malloc(16);
+	for (int i = 0; i < 16; i++) {
+		printf("%02x", outBuffer[i]);
+		keyFinal[i] = outBuffer[i];
+	}
+
+
+	// WRITE KEY into FILE
+	FILE* decryptedKey = fopen("decryptedKey.key", "wb");
+	fwrite(keyFinal, sizeof(unsigned char), RSA_size(privateRSAKEY), decryptedKey);
+	fclose(decryptedKey);
+	fclose(sessionKEY);
+	RSA_free(privateRSAKEY);
+
+
+	char* sha256Key = (char*)malloc(65);
+	computeSHA256(16, keyFinal, sha256Key);
+
+	return sha256Key;
 }
 
-bool verifySignature(FILE* signatureFile, FILE* publicKeyFile, unsigned char* hashValue) {
-	RSA* publicKey;
+bool checkSignFiles(char signFile[], char pubKey[], int len, char sha256Key[65]) {
+	FILE* sigF = fopen(signFile, "rb");
+	FILE* pubKEYF = fopen(pubKey, "rb");
+	RSA* rsaPubKEY = RSA_new();
+	rsaPubKEY = PEM_read_RSAPublicKey(pubKEYF, NULL, NULL, NULL);
+	fclose(pubKEYF);
+	unsigned char* inputBuffer = (unsigned char*)malloc(RSA_size(rsaPubKEY));
+	memset(inputBuffer, 0x00, RSA_size(rsaPubKEY));
+	fread(inputBuffer, RSA_size(rsaPubKEY), 1, sigF);
+	fclose(sigF);
+	unsigned char* outBuffer = (unsigned char*)malloc(len);
+	RSA_public_decrypt(RSA_size(rsaPubKEY), inputBuffer, outBuffer, rsaPubKEY, RSA_PKCS1_PADDING);
 
-	unsigned char* buffer = NULL;
-	unsigned char* last_data = NULL;
+	char sha256[65];
+	for (int j = 0; j < SHA256_DIGEST_LENGTH; j++) {
+		sprintf(sha256 + (j * 2), "%02x", outBuffer[j]);
 
-	publicKey = RSA_new();
-	publicKey = PEM_read_RSAPublicKey(publicKeyFile, NULL, NULL, NULL);
+	}
 
-	buffer = (unsigned char*)malloc(RSA_size(publicKey));
+	RSA_free(rsaPubKEY);
 
-	fread(buffer, RSA_size(publicKey), 1, signatureFile);
+	if (memcmp(sha256, sha256Key, len) == 0) {
+		printf("\n Signature Verifyed!\n");
+		return true;
+	}
 
-	last_data = (unsigned char*)malloc(16);
-
-	RSA_public_decrypt(RSA_size(publicKey), buffer, last_data, publicKey, RSA_PKCS1_PADDING);
-
-	//printHash(last_data);
-	//printf("\n");
-	//printHash(hashValue);
-	//printf("\n");
-
-	bool result = (memcmp(last_data, hashValue, 16) == 0);
-
-	//	free(last_data);
-	//	free(buffer);
-
-	RSA_free(publicKey);
-
-	return result;
+	return false;
 }
 
-int main(int argc, char** argv)
-{
-	if (argc == 2) {
-		{
-			FILE* decryptedFile;
-			FILE* encryptedFile;
-			FILE* privateKeyFile;
-			std::string rootDirectory = argv[1];
-			std::string encryptedFileFilename = rootDirectory + "Session.key";
-			std::string decryptedFileFilename = rootDirectory + "DecryptedSession.key";
-			std::string privateKeyFileFilename = rootDirectory + "sStudent.pem";
+void decryptMessages(char mFileEnc[], char* sha256Key, char mFileSign[], char pubKey[], int nr) {
+	//decrypt the message file
+	FILE* mFEnc = fopen(mFileEnc, "rb"); //the current message.enc file
 
-			fopen_s(&encryptedFile, encryptedFileFilename.c_str(), "rb");
-			fopen_s(&decryptedFile, decryptedFileFilename.c_str(), "wb");
-			fopen_s(&privateKeyFile, privateKeyFileFilename.c_str(), "r");
+	char decMsgFile[30];
+	sprintf(decMsgFile, "%d.txt", nr);
+	FILE* mFDec = fopen(decMsgFile, "wb");
 
-			decryptRSA(encryptedFile, decryptedFile, KEY_LENGTH, privateKeyFile);
+	//aes decryption with restored key
+	fseek(mFEnc, 0, SEEK_END);
+	long int msgEncSize = ftell(mFEnc) - 4;
+	fseek(mFEnc, 0, SEEK_SET);
 
-			fclose(decryptedFile);
-			unsigned char fileContent[16];
-			fopen_s(&decryptedFile, decryptedFileFilename.c_str(), "rb");
-			fread(fileContent, sizeof(unsigned char), 16, decryptedFile);
-			printf("1. Decrypted file content: ");
-			for (int i = 0; i < 16; i++) {
-				printf("%02X ", fileContent[i]);
-			}
-			printf("\n");
+	long int outLen = 0;
+	fread(&outLen, sizeof(outLen), 1, mFEnc);
 
-			fclose(encryptedFile);
-			fclose(decryptedFile);
-			fclose(privateKeyFile);
-		}
+	unsigned char* inputBuffer = (unsigned char*)malloc(msgEncSize);
+	unsigned char* outBuffer = (unsigned char*)malloc(msgEncSize);
 
-		{
-			FILE* decryptedFile;
-			FILE* publicKeyFile;
-			FILE* signatureFile;
-			std::string rootDirectory = argv[1];
-			std::string decryptedFileFilename = rootDirectory + "DecryptedSession.key";
-			std::string signatureFileFilename = rootDirectory + "sfile.sign";
-			std::string publicKeyFileFilename = rootDirectory + "pISM.pem";
-			fopen_s(&decryptedFile, decryptedFileFilename.c_str(), "rb");
-			fopen_s(&signatureFile, signatureFileFilename.c_str(), "rb");
-			fopen_s(&publicKeyFile, publicKeyFileFilename.c_str(), "r");
+	memset(inputBuffer, 0x00, outLen);
+	fread(inputBuffer, msgEncSize, 1, mFEnc);
+	unsigned char IV[16];
+	memset(&IV, 0x01, sizeof(IV));
+	// DECRYPTING AES:
+	AES_KEY aesKEY;
+	AES_set_decrypt_key((unsigned char*)sha256Key, 128, &aesKEY);
+	AES_cbc_encrypt(inputBuffer, outBuffer, outLen, &aesKEY, IV, AES_DECRYPT);
 
-			unsigned char keyHashValue[SHA256_DIGEST_LENGTH];
-			generateFileHashValue(decryptedFile, keyHashValue);
+	fwrite(outBuffer, outLen, 1, mFDec);
 
-			if (verifySignature(signatureFile, publicKeyFile, keyHashValue)) {
-				printf("2. The decrypted key is valid.\n");
-			}
-			else {
-				printf("2. The decrypted key is NOT valid.\n");
-			}
+	char msgShaValue[65];
 
-			fclose(publicKeyFile);
-			fclose(decryptedFile);
-			fclose(signatureFile);
-		}
+	//compute sha value for the message file
+	computeSHA256(outLen, outBuffer, msgShaValue);
 
-		{
-			FILE* decryptedFile;
-			FILE* signatureFile;
-			FILE* publicKeyFile;
-			std::string rootDirectory = argv[1];
-			std::string decryptedFileFilename = rootDirectory + "DecryptedSession.key";
-			std::string signatureFileFilename = rootDirectory + "mfile.sign";
-			std::string publicKeyFileFilename = rootDirectory + "pISM.pem";
-			for (int i = 1; i <= 3; i++) {
-				FILE* encryptedMessage;
-				FILE* decryptedMessage;
-				std::string encryptedMessageFilename = rootDirectory + "message" + std::to_string(i) + ".enc";
-				std::string decryptedMessageFilename = rootDirectory + "message" + std::to_string(i) + ".dec";
-				fopen_s(&encryptedMessage, encryptedMessageFilename.c_str(), "rb");
-				fopen_s(&decryptedMessage, decryptedMessageFilename.c_str(), "wb");
+	//open sign file
+	FILE* mFSign = fopen(mFileSign, "rb"); //open mfile.sign
+	FILE* pubKEYF = fopen(pubKey, "r");  //open pISM.pem
+	RSA* rsaPubKEY = RSA_new();
+	rsaPubKEY = PEM_read_RSAPublicKey(pubKEYF, NULL, NULL, NULL);
 
-				fopen_s(&decryptedFile, decryptedFileFilename.c_str(), "rb");
-				fopen_s(&signatureFile, signatureFileFilename.c_str(), "rb");
-				fopen_s(&publicKeyFile, publicKeyFileFilename.c_str(), "r");
+	unsigned char* signBuffer = (unsigned char*)malloc(RSA_size(rsaPubKEY));
+	fread(signBuffer, RSA_size(rsaPubKEY), 1, mFSign);
 
-				decryptAES(encryptedMessage, decryptedMessage, decryptedFile);
+	unsigned char* decSignBuffer = (unsigned char*)malloc(16);
 
-				fclose(decryptedMessage);
-				fopen_s(&decryptedMessage, decryptedMessageFilename.c_str(), "rb");
-				unsigned char keyHashValue[SHA256_DIGEST_LENGTH];
-				generateFileHashValue(decryptedMessage, keyHashValue);
-				if (verifySignature(signatureFile, publicKeyFile, keyHashValue)) {
-					printf("3. Message number %d is valid.\n", i);
-				}
-				else {
-					printf("3. Message number %d is NOT valid.\n", i);
-				}
+	RSA_public_decrypt(RSA_size(rsaPubKEY), signBuffer, decSignBuffer, rsaPubKEY, RSA_PKCS1_PADDING);
 
-				fclose(encryptedMessage);
-				fclose(decryptedMessage);
-				fclose(decryptedFile);
-				fclose(signatureFile);
-			}
-		}
+	char signShaValue[65];
 
-		{
-			FILE* resultFile;
-			std::string rootDirectory = argv[1];
-			std::string resultFileFilename = rootDirectory + "result.txt";
-			std::string name = "Butnaru Ioan - Sorin\n";
-			std::string result = "message3\n";
+	//compute sha value for the msign file
+	computeSHA256(16, decSignBuffer, signShaValue);
 
-			std::ofstream resultOutput(resultFileFilename.c_str());
-			resultOutput << name << result;
-			resultOutput.close();
-
-			FILE* initialFile;
-			FILE* encryptedFile;
-			FILE* keyFile;
-			std::string encryptedFileFilename = rootDirectory + "result.enc";
-			std::string keyFilename = rootDirectory + "DecryptedSession.key";
-			fopen_s(&initialFile, resultFileFilename.c_str(), "rb");
-			fopen_s(&encryptedFile, encryptedFileFilename.c_str(), "wb");
-			fopen_s(&keyFile, keyFilename.c_str(), "rb");
-
-			encryptAES(initialFile, encryptedFile, keyFile);
-
-			fclose(initialFile);
-			fclose(encryptedFile);
-		}
-
-		printf("\n\n");
+	if (memcmp(signShaValue, msgShaValue, 32) == 0) {
+		printf("\nThe correct message file is %s: ", mFileEnc);
 	}
-	else {
-		printf("\n Usage Mode: Challenge3.exe filesDirectory \n\n");
-		return 1;
+
+
+	//free(inputBuffer);
+	//free(outBuffer);
+	//free(signBuffer);
+	//free(decSignBuffer);
+	fclose(mFDec);
+	fclose(mFEnc);
+	fclose(mFSign);
+	fclose(pubKEYF);
+}
+
+
+int main() {
+	char sessionKey[] = "Session.key";
+	char privateKey[] = "sStudent.pem";
+
+	//ex1 - rsa decrypt
+	char* sha256Key = (char*)malloc(65);
+	sha256Key = decryptSession(sessionKey, privateKey);
+	printf("\nDecrypted session key content :%s\n", sha256Key);
+
+	//ex2 - validate sign
+	char signFile[] = "sfile.sign";
+	char pubKey[] = "pISM.pem";
+	bool checkSign = checkSignFiles(signFile, pubKey, 16, sha256Key);
+
+
+	char messageFile[] = "message%d.enc";
+	char mSignFile[] = "mfile.sign";
+
+	//ex3 - decrypt messages
+	for (int i = 1; i <= 3; i++) {
+		char numeFis[30];
+		sprintf(numeFis, messageFile, i);
+		decryptMessages(numeFis, sha256Key, mSignFile, pubKey, i);
 	}
+
+
 
 	return 0;
 }
+
+
+//1. decriptez fiecare fisier mesaj
+//2. hashuiesc fiecare fisier mesaj
+//3. compar fiecare hash cu hashul lui mfile.sign
+
