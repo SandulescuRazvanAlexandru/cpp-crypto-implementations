@@ -4,6 +4,12 @@
 
 #define MESSAGE_CHUNK 128
 
+//Teory MD5:
+//-> message digest : as limited stream of bytes that tries to authenticate the content of a inpit message;
+//it is not an encryption algorithm; it only tries to get a finger print to authenticate
+//-> compute the message digest into several chuncks having 16 bytes each(each crunck provides it's input - the plain text 
+//splitted into 4 blocks of 4 bytes); the resulted blocks will be arranged in a different way for the next itteration to be used as input
+
 void computeMD5(int fileLen, unsigned char* buffer, char md5[]) {
 	MD5_CTX ctx; //context for MD5
 	MD5_Init(&ctx); //init the hash
