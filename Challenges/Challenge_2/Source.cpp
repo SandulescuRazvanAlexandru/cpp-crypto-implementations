@@ -1,140 +1,98 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <openssl/sha.h>
-#include <vector>
 #include <iostream>
 
-void generateDigest(char* value, unsigned char& finalDigest) {
-	SHA256_CTX ctx;
-	int passwordLength = strlen(value);
 
+/*
+TO DO:
+For exercise 1:
+-> read all the passwords from the file and for every pass generate it's message digest
+-> compare each message digest with the given one and print the clear password which message digest matches the hardcoded one
+For exercise 2:
+-> write in a file for every password, it's corresponding message digest
+*/
+
+#define MAX_LINE_LENGTH 100
+#define MESSAGE_CHUNK 256
+
+unsigned char* generateSHA256Digest(char* input, int lineLen) {
+	SHA256_CTX ctx;
+	unsigned char* finalDigest = (unsigned char*)malloc(SHA256_DIGEST_LENGTH);
 	SHA256_Init(&ctx);
-	SHA256_Update(&ctx, value, passwordLength);
-	SHA256_Final(&finalDigest, &ctx);
+
+	char* tmpBuffer = (char*)malloc(lineLen);
+	strcpy(tmpBuffer, input);
+
+	while (lineLen > 0) {
+		if (lineLen > MESSAGE_CHUNK) {
+			SHA256_Update(&ctx, tmpBuffer, MESSAGE_CHUNK);
+		}
+		else {
+			SHA256_Update(&ctx, tmpBuffer, lineLen);
+		}
+		lineLen -= MESSAGE_CHUNK;
+		tmpBuffer += MESSAGE_CHUNK;
+	}
+
+	SHA256_Final(finalDigest, &ctx);
+	return finalDigest;
 }
 
-int main(int argc, char** argv)
-{
-	if (argc == 2) {
-
-		FILE* inputFile = NULL;
-		FILE* outputFile = NULL;
-		errno_t err;
-
-		unsigned char* fileBuffer = NULL;
-		unsigned char finalDigest[SHA256_DIGEST_LENGTH];
-		unsigned char searchedDigest[] = {
-			0xF5, 0x03, 0x74, 0xF5, 0xAC, 0xB5, 0x3C, 0x12,
-			0x0A, 0x6B, 0x5F, 0x65, 0xAD, 0x78, 0xFC, 0xF5,
-			0x09, 0xAD, 0x17, 0x43, 0x38, 0xBE, 0x42, 0xDB,
-			0x4E, 0x26, 0x94, 0x45, 0x68, 0xE6, 0xBA, 0x20
-		};
-		/*
-		int count = 0;
-		for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-			printf("%02X", searchedDigest[i]);
-			printf(" ");
-		}
-		printf("\n");
-		return 0;
-		*/
-
-		// Exercise 1
-		// Password: woohooinwonderland
-		err = fopen_s(&inputFile, argv[1], "rb");
-		if (err == 0) {
-			fseek(inputFile, 0, SEEK_END);
-			int fileLength = ftell(inputFile);
-			//fseek(inputFile, 7700000, SEEK_SET);
-			fseek(inputFile, 0, SEEK_SET);
-
-			fileBuffer = (unsigned char*)malloc(fileLength);
-			fread(fileBuffer, fileLength, 1, inputFile);
-
-			char* nextPassword;
-			char* password = strtok_s((char*)fileBuffer, "\n", &nextPassword);
-			while (password != NULL) {
-				printf("\r%-25s ", password);
-
-				generateDigest(password, *finalDigest);
-
-				int count = 0;
-				for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-					printf("%02X", finalDigest[i]);
-					printf(" ");
-				}
-				//printf("\r");
-
-				if (memcmp(searchedDigest, finalDigest, SHA256_DIGEST_LENGTH) == 0) {
-					printf("\nDigest found!\n");
-					printf("Password: %s\n", password);
-					printf("Password SHA-256: ");
-					int count = 0;
-					for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-						printf("%02X", finalDigest[i]);
-						printf(" ");
-					}
-					printf("\n");
-					printf("Searched SHA-256: ");
-					for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-						printf("%02X", searchedDigest[i]);
-						printf(" ");
-					}
-					printf("\n");
-
-					break;
-				}
-				password = strtok_s(NULL, "\n", &nextPassword);
-			}
-
-			fclose(inputFile);
-		}
+int main(int argc, char** argv) {
+	unsigned char givenMessageDigest[] = {
+		0xf5 ,0x03 ,0x74 ,0xf5 ,0xac ,0xb5 ,0x3c ,
+		0x12 ,0x0a ,0x6b ,0x5f ,0x65 ,0xad ,0x78 ,
+		0xfc ,0xf5 ,0x09 ,0xad ,0x17 ,0x43 ,0x38 ,
+		0xbe ,0x42 ,0xdb ,0x4e ,0x26 ,0x94 ,0x45 ,
+		0x68 ,0xe6 ,0xba ,0x20 };
 
 
-		// Exercise 2
-		char outputFilePath[] = "output.txt";
-		err = fopen_s(&inputFile, argv[1], "rb");
-		err = fopen_s(&outputFile, outputFilePath, "wb");
-		printf("\nWriting digest file...\n");
-		if (err == 0) {
-			fseek(inputFile, 0, SEEK_END);
-			int fileLength = ftell(inputFile);
-			fseek(inputFile, 0, SEEK_SET);
-
-			fileBuffer = (unsigned char*)malloc(fileLength);
-			fread(fileBuffer, fileLength, 1, inputFile);
-
-			char* nextPassword;
-			char* password = strtok_s((char*)fileBuffer, "\n", &nextPassword);
-			while (password != NULL) {
-				printf("\r%-25s ", password);
-
-				generateDigest(password, *finalDigest);
-
-				int count = 0;
-				for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-					printf("%02X", finalDigest[i]);
-					printf(" ");
-				}
-				//printf("\r");
-
-				for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-					fprintf(outputFile, "%02X", finalDigest[i]);
-					fprintf(outputFile, " ");
-				}
-				fprintf(outputFile, "\n");
-
-				password = strtok_s(NULL, "\n", &nextPassword);
-			}
-
-			fclose(inputFile);
-		}
-
+	printf("Given message digest:\n");
+	for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+		printf("%02X ", givenMessageDigest[i]);
+		printf(" ");
 	}
-	else {
-		printf("\n Usage Mode: SHA1.exe fSrc.txt \n\n");
+
+	printf("\n");
+
+	char buf[MAX_LINE_LENGTH] = "";
+
+	FILE* fileInput = argc > 1 ? fopen(argv[1], "r") : stdin;
+	FILE* fileOuput = argc > 1 ? fopen("output.txt", "w") : stdout;
+
+	if (!fileInput) {
+		fprintf(stderr, "Error: file open failed '%s'!\n", argv[1]);
 		return 1;
 	}
 
+	if (!fileOuput) {
+		fprintf(stderr, "Error: file open failed for output!");
+	}
+
+	printf("BUNICA: %s", argv[1]);
+	printf("\n");
+
+	while (fscanf(fileInput, "%s\n", buf) != EOF) {
+		//ex1
+		unsigned char* messageDigestValue = generateSHA256Digest(buf, strlen(buf));
+
+		if (memcmp(givenMessageDigest, messageDigestValue, SHA256_DIGEST_LENGTH) == 0) {
+			printf("Parola cautata este: %s", buf);
+			printf("\n");
+		}
+
+		//ex2
+		for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+			fprintf(fileOuput, "%02X ", messageDigestValue[i]);
+		}
+		fprintf(fileOuput, "\n");
+	}
+
+	if (fileInput != stdin) fclose(fileInput);
+	if (fileOuput != stdout) fclose(fileOuput);
 	return 0;
 }
+
+
+
