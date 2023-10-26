@@ -1,0 +1,6 @@
+Implemented DES and Triple DES encryption and decryption in CFB mode utilizing OpenSSL in C++.
+
+Developed and showcased AES (CBC and ECB modes) and DES encryption techniques using OpenSSL in C++ for secure data handling.
+
+
+

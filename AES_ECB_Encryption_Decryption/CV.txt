@@ -1,0 +1,6 @@
+Implemented AES encryption in ECB mode highlighting its cryptographic properties with OpenSSL in C++.
+
+Developed and showcased AES (CBC and ECB modes) and DES encryption techniques using OpenSSL in C++ for secure data handling.
+
+
+
