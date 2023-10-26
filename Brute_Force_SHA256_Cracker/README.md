@@ -18,14 +18,14 @@ Given a list of clear passwords, this application:
 ## Usage
 
 ### Compilation:
-\```bash
+```bash
 $ g++ <filename>.cpp -o output -lcrypto
-\```
+```
 
 ### Execution:
-\```bash
+```bash
 $ ./output [path_to_password_list]
-\```
+```
 
 Ensure the password list file (`10-million-password-list-top-1000000.txt` or similar) is present in the directory or provide its path.
 
