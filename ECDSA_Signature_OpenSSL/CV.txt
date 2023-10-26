@@ -1,0 +1,3 @@
+Demonstrates ECDSA signature generation and verification on secp224r1 curve using OpenSSL.
+
+Comprehensive OpenSSL-based ECDSA demonstration, covering key pair generation, signature creation, and verification using the secp224r1 (NIST P-224) curve.
