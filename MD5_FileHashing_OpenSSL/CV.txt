@@ -1,0 +1,3 @@
+Demonstrated MD5 file hashing using OpenSSL, emphasizing its deprecated security status.
+
+Established a suite of cryptographic hashing utilities using OpenSSL, spanning SHA-1, SHA-256, MD5, and HMAC with SHA-256.

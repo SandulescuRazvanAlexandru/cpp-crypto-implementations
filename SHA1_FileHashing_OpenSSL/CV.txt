@@ -1,0 +1,3 @@
+Implemented SHA-1 hashing algorithm for file content using OpenSSL.
+
+Established a suite of cryptographic hashing utilities using OpenSSL, spanning SHA-1, SHA-256, MD5, and HMAC with SHA-256.
