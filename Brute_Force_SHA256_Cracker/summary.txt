@@ -1,0 +1,1 @@
+Developed a brute force password cracker using OpenSSL to identify passwords from a list based on their SHA-256 hashes.
