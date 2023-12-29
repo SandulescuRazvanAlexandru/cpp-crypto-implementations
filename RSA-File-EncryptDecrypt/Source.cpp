@@ -1,177 +1,169 @@
-#include<stdio.h>
-#include<malloc.h>
-#include<openssl/rsa.h>
-#include<openssl/pem.h>
-#include<openssl/applink.c>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <openssl/rsa.h>
+#include <openssl/pem.h>
+#include <openssl/err.h>
 
-void generateRsaKeyPair(FILE* privKeyFile, FILE* pubKeyFile) {
-	RSA* rsaKeyPair = NULL; //pointer to RSA OpenSSL structure
+void generateRsaKeyPair() {
+    RSA* rsaKeyPair = RSA_new();
+    BIGNUM* bignum = BN_new();
+    BN_set_word(bignum, RSA_F4); // Commonly used public exponent 65537
 
-	rsaKeyPair = RSA_new(); //allcation of RSA structure
-	rsaKeyPair = RSA_generate_key(1024, 65535, NULL, NULL); //generate the RSA key pair
+    if (RSA_generate_key_ex(rsaKeyPair, 2048, bignum, nullptr) != 1) {
+        ERR_print_errors_fp(stderr);
+    }
+    else {
+        // Generate the RSA key pair
+        FILE* privKeyFile = fopen("privKeyFile.pem", "wb");
+        FILE* pubKeyFile = fopen("pubKeyFile.pem", "wb");
+        if (privKeyFile == nullptr || pubKeyFile == nullptr) {
+            perror("Error opening key files for writing");
+        }
+        else {
+            // Write the keys to disk
+            PEM_write_RSAPrivateKey(privKeyFile, rsaKeyPair, nullptr, nullptr, 0, nullptr, nullptr);
+            PEM_write_RSAPublicKey(pubKeyFile, rsaKeyPair); // or PEM_write_RSA_PUBKEY for a more common format
 
-	RSA_check_key(rsaKeyPair); //check if the RSA key pair was generated fine
+            fclose(privKeyFile);
+            fclose(pubKeyFile);
+            printf("Generated the RSA key pair successfully!\n");
+        }
+    }
 
-	PEM_write_RSAPrivateKey(privKeyFile, rsaKeyPair, NULL, NULL, 0, 0, NULL); //save the rsa private key in it's file
-	PEM_write_RSAPublicKey(pubKeyFile, rsaKeyPair); //save the rsa public key in it's file
-
-	fclose(privKeyFile);
-	fclose(pubKeyFile);
-
-	RSA_free(rsaKeyPair);
-	printf("Generated the RSA key pair successfully!\n");
+    RSA_free(rsaKeyPair);
+    BN_free(bignum);
 }
 
-void encryptRsa(long int inFileLen, FILE* inFile, FILE* pubKeyFile) {
-	RSA* pubKey = RSA_new();
-
-	pubKey = PEM_read_RSAPublicKey(pubKeyFile, NULL, NULL, NULL); //loads the public key (components) into RSA internal structure
-	fclose(pubKeyFile);
-
-	unsigned char* inBuffer = (unsigned char*)malloc(RSA_size(pubKey) + 1);
-	unsigned char* data = (unsigned char*)malloc(RSA_size(pubKey));
-
-	FILE* outFile = fopen("RSA-Encryption2.txt", "wb");
-
-	if (inFileLen != RSA_size(pubKey)) {
-		while (fread_s(inBuffer, RSA_size(pubKey), sizeof(unsigned char), RSA_size(pubKey), inFile) == RSA_size(pubKey)) {
-			RSA_public_encrypt(RSA_size(pubKey), inBuffer, data, pubKey, RSA_NO_PADDING); //encryption for a complete input data block by using the public key; no padding is required
-			fwrite(data, sizeof(unsigned char), RSA_size(pubKey), outFile); // write the result of encryption (encrypted data block) into enc file
-		}
-	}
-	else {
-		fread_s(inBuffer, RSA_size(pubKey), sizeof(unsigned char), RSA_size(pubKey), inFile);
-	}
-
-	//RSA_public_encrypt(inFileLen % RSA_size(pubKey), inBuffer, data, pubKey, RSA_PKCS1_PADDING); //encryption for the incomplete last input data block; the completion is made by the padding at content level
-	RSA_public_encrypt(RSA_size(pubKey), inBuffer, data, pubKey, RSA_PKCS1_PADDING);
-	fwrite(data, sizeof(unsigned char), RSA_size(pubKey), outFile); //write the result of last last block encryption into enc file
-
-	free(inBuffer);
-	free(data);
-	RSA_free(pubKey);
-
-	fclose(outFile);
-	fclose(inFile);
+RSA* loadPublicKey(const char* path) {
+    FILE* file = fopen(path, "rb");
+    if (!file) {
+        perror("Error opening public key file");
+        return nullptr;
+    }
+    RSA* rsaPublicKey = PEM_read_RSAPublicKey(file, nullptr, nullptr, nullptr);
+    fclose(file);
+    if (rsaPublicKey == nullptr) {
+        ERR_print_errors_fp(stderr);
+    }
+    return rsaPublicKey;
 }
 
-//void decryptRsa(long int inFileLen, long int encFileLen, FILE* encFile, FILE* privKeyFile, FILE* pubKeyFile) {
-//	RSA* privKey = RSA_new();
-//	RSA* pubKey = RSA_new();
-//
-//	privKey = PEM_read_RSAPublicKey(privKeyFile, NULL, NULL, NULL); //loads the private key (components) into RSA internal structure
-//	pubKey = PEM_read_RSAPublicKey(pubKeyFile, NULL, NULL, NULL);
-//	fclose(privKeyFile);
-//	fclose(pubKeyFile);
-//
-//	unsigned char* eData = (unsigned char*)malloc(RSA_size(pubKey));
-//	unsigned char* lastData = (unsigned char*)malloc(RSA_size(pubKey));
-//
-//	int maxChunks = encFileLen / RSA_size(pubKey); // number of encrypted data blocks
-//	int currentChunk = 1;
-//
-//	FILE* decFile = fopen("RSA-Decryption.txt", "wb");
-//
-//	if (encFileLen != RSA_size(pubKey)) {
-//		while (fread_s(eData, RSA_size(pubKey), sizeof(unsigned char), RSA_size(pubKey), encFile) == RSA_size(pubKey)) { // read one single encrypted complete data block
-//			if (currentChunk != maxChunks) {
-//				RSA_private_decrypt(RSA_size(pubKey), eData, lastData, privKey, RSA_NO_PADDING); // decryption of the complete encrypted data block; no padding required
-//				fwrite(lastData, sizeof(unsigned char), RSA_size(pubKey), decFile);
-//				currentChunk++;
-//			}
-//		}
-//	}
-//	else {
-//		fread_s(eData, RSA_size(pubKey), sizeof(unsigned char), RSA_size(pubKey), encFile);
-//	}
-//
-//	RSA_private_decrypt(RSA_size(pubKey), eData, lastData, privKey, RSA_PKCS1_PADDING); // decryption of the last (incomplete) encrypted data block; padding required
-//	fwrite(lastData, sizeof(unsigned char), inFileLen % RSA_size(pubKey), decFile); // fileLen - length of the original/initial plaintext
-//
-//	free(eData);
-//	free(lastData);
-//	RSA_free(pubKey);
-//	RSA_free(privKey);
-//
-//	fclose(encFile);
-//	fclose(decFile);
-//}
+RSA* loadPrivateKey(const char* path) {
+    FILE* file = fopen(path, "rb");
+    if (!file) {
+        perror("Error opening private key file");
+        return nullptr;
+    }
+    RSA* rsaPrivateKey = PEM_read_RSAPrivateKey(file, nullptr, nullptr, nullptr);
+    fclose(file);
+    if (rsaPrivateKey == nullptr) {
+        ERR_print_errors_fp(stderr);
+    }
+    return rsaPrivateKey;
+}
 
-void decryptRsa(long int encFileLen, FILE* encFile, FILE* privKeyFile) {
-	RSA* privKey = RSA_new();
+int encryptRsa(const char* filename, RSA* rsaPublicKey) {
+    FILE* inFile = fopen(filename, "rb");
+    if (!inFile) {
+        perror("Error opening input file for reading");
+        return -1;
+    }
+    // Get file size
+    fseek(inFile, 0, SEEK_END);
+    long inFileLen = ftell(inFile);
+    fseek(inFile, 0, SEEK_SET);
 
-	privKey = PEM_read_RSAPrivateKey(privKeyFile, NULL, NULL, NULL); //loads the private key (components) into RSA internal structure
-	fclose(privKeyFile);
+    // Read file contents
+    unsigned char* inBuffer = (unsigned char*)malloc(inFileLen + 1);
+    fread(inBuffer, 1, inFileLen, inFile);
+    fclose(inFile);
+    inBuffer[inFileLen] = '\0';
 
-	unsigned char* encBuff = (unsigned char*)malloc(RSA_size(privKey));
-	unsigned char* data = (unsigned char*)malloc(RSA_size(privKey));
+    // Encrypt the data
+    int rsaSize = RSA_size(rsaPublicKey);
+    unsigned char* encryptedData = (unsigned char*)malloc(rsaSize);
+    int encryptedDataLen = RSA_public_encrypt(inFileLen, inBuffer, encryptedData, rsaPublicKey, RSA_PKCS1_PADDING);
+    if (encryptedDataLen == -1) {
+        ERR_print_errors_fp(stderr);
+        free(inBuffer);
+        free(encryptedData);
+        return -1;
+    }
 
-	int maxChunks = encFileLen / RSA_size(privKey); // number of encrypted data blocks
-	int currentChunk = 1;
+    // Write the encrypted data to a file
+    FILE* outFile = fopen("encrypted_data.bin", "wb");
+    fwrite(encryptedData, sizeof(unsigned char), encryptedDataLen, outFile);
+    fclose(outFile);
 
-	FILE* decFile = fopen("RSA-Decryption2.txt", "wb");
+    free(inBuffer);
+    free(encryptedData);
+    printf("Encryption complete!\n");
 
-	if (encFileLen != RSA_size(privKey)) {
-		while (fread_s(encBuff, RSA_size(privKey), sizeof(unsigned char), RSA_size(privKey), encFile) == RSA_size(privKey)) { // read one single encrypted complete data block
-			if (currentChunk != maxChunks) {
-				RSA_private_decrypt(RSA_size(privKey), encBuff, data, privKey, RSA_NO_PADDING); // decryption of the complete encrypted data block; no padding required
-				fwrite(data, sizeof(unsigned char), RSA_size(privKey), decFile);
-				currentChunk++;
-			}
-		}
-	}
-	else {
-		fread_s(encBuff, RSA_size(privKey), sizeof(unsigned char), RSA_size(privKey), encFile);
-	}
+    return encryptedDataLen;
+}
 
-	RSA_private_decrypt(RSA_size(privKey), encBuff, data, privKey, RSA_PKCS1_PADDING); // decryption of the last (incomplete) encrypted data block; padding required
-	//fwrite(data, sizeof(unsigned char), inFileLen % RSA_size(privKey), decFile); // fileLen - length of the original/initial plaintext
-	fwrite(data, sizeof(unsigned char), RSA_size(privKey), decFile);
+int decryptRsa(const char* filename, RSA* rsaPrivateKey, int encryptedDataLen) {
+    FILE* inFile = fopen(filename, "rb");
+    if (!inFile) {
+        perror("Error opening encrypted data file for reading");
+        return -1;
+    }
 
-	free(encBuff);
-	free(data);
-	RSA_free(privKey);
+    // Read encrypted contents
+    unsigned char* encryptedData = (unsigned char*)malloc(encryptedDataLen);
+    fread(encryptedData, sizeof(unsigned char), encryptedDataLen, inFile);
+    fclose(inFile);
 
-	fclose(encFile);
-	fclose(decFile);
+    // Decrypt the data
+    unsigned char* decryptedData = (unsigned char*)malloc(encryptedDataLen);
+    int decryptedDataLen = RSA_private_decrypt(encryptedDataLen, encryptedData, decryptedData, rsaPrivateKey, RSA_PKCS1_PADDING);
+    if (decryptedDataLen == -1) {
+        ERR_print_errors_fp(stderr);
+        free(encryptedData);
+        free(decryptedData);
+        return -1;
+    }
+
+    // Write the decrypted data to a file
+    FILE* outFile = fopen("decrypted_data.txt", "wb");
+    fwrite(decryptedData, sizeof(unsigned char), decryptedDataLen, outFile);
+    fclose(outFile);
+
+    free(encryptedData);
+    free(decryptedData);
+    printf("Decryption complete!\n");
+
+    return decryptedDataLen;
 }
 
 int main() {
+    generateRsaKeyPair(); // This will create the key pair files
 
-	FILE* privKeyFile = fopen("privKeyFile.pem", "w+");
-	FILE* pubKeyFile = fopen("pubKeyFile.pem", "w+");
+    RSA* rsaPublicKey = loadPublicKey("pubKeyFile.pem");
+    if (rsaPublicKey == nullptr) {
+        return 1;
+    }
 
-	generateRsaKeyPair(privKeyFile, pubKeyFile);
+    int encryptedDataLen = encryptRsa("input.txt", rsaPublicKey);
+    if (encryptedDataLen == -1) {
+        RSA_free(rsaPublicKey);
+        return 1;
+    }
 
-	if (privKeyFile && pubKeyFile) {
-		pubKeyFile = fopen("pubKeyFile.pem", "rb");
-		FILE* inputFile = fopen("Input.txt", "rb");
+    RSA_free(rsaPublicKey);
 
-		if (inputFile) {
-			fseek(inputFile, 0, SEEK_END);
-			long int inFileLen = ftell(inputFile);
-			fseek(inputFile, 0, SEEK_SET);
+    RSA* rsaPrivateKey = loadPrivateKey("privKeyFile.pem");
+    if (rsaPrivateKey == nullptr) {
+        return 1;
+    }
 
-			encryptRsa(inFileLen, inputFile, pubKeyFile);
+    if (decryptRsa("encrypted_data.bin", rsaPrivateKey, encryptedDataLen) == -1) {
+        RSA_free(rsaPrivateKey);
+        return 1;
+    }
 
-			FILE* encFile = fopen("RSA-Encryption.txt", "rb");
-			
-			if (encFile) {
-				//pubKeyFile = fopen("pubKeyFile.pem", "rb");
-				privKeyFile = fopen("privKeyFile.pem", "rb");
+    RSA_free(rsaPrivateKey);
 
-				fseek(encFile, 0, SEEK_END);
-				long int encFileLen = ftell(encFile);
-				fseek(encFile, 0, SEEK_SET);
-
-				decryptRsa(encFileLen, encFile, privKeyFile);
-			}
-		}
-		else {
-			printf("Error when opening the input file!\n");
-			return 1;
-		}
-	}
-
-	return 0;
+    return 0;
 }
