@@ -4,6 +4,7 @@
 #include <openssl/rsa.h>
 #include <openssl/pem.h>
 #include <openssl/err.h>
+#include <openssl/applink.c>
 
 void generateRsaKeyPair() {
     RSA* rsaKeyPair = RSA_new();

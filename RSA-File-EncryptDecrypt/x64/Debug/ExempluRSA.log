@@ -1,0 +1,31 @@
+﻿  Source.cpp
+C:\Program Files\OpenSSL-Win64\include\openssl\applink.c(130,47): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compiling source file 'Source.cpp')
+  
+C:\Program Files\OpenSSL-Win64\include\openssl\applink.c(138,46): warning C4996: '_open': This function or variable may be unsafe. Consider using _sopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  (compiling source file 'Source.cpp')
+  
+C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\Source.cpp(10,23): warning C4996: 'RSA_new': Since OpenSSL 3.0
+C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\Source.cpp(14,9): warning C4996: 'RSA_generate_key_ex': Since OpenSSL 3.0
+C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\Source.cpp(19,29): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\Source.cpp(20,28): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\Source.cpp(26,13): warning C4996: 'PEM_write_RSAPrivateKey': Since OpenSSL 3.0
+C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\Source.cpp(27,13): warning C4996: 'PEM_write_RSAPublicKey': Since OpenSSL 3.0
+C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\Source.cpp(35,5): warning C4996: 'RSA_free': Since OpenSSL 3.0
+C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\Source.cpp(40,18): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\Source.cpp(45,25): warning C4996: 'PEM_read_RSAPublicKey': Since OpenSSL 3.0
+C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\Source.cpp(54,18): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\Source.cpp(59,26): warning C4996: 'PEM_read_RSAPrivateKey': Since OpenSSL 3.0
+C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\Source.cpp(68,20): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\Source.cpp(85,19): warning C4996: 'RSA_size': Since OpenSSL 3.0
+C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\Source.cpp(87,28): warning C4996: 'RSA_public_encrypt': Since OpenSSL 3.0
+C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\Source.cpp(96,21): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\Source.cpp(108,20): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\Source.cpp(121,28): warning C4996: 'RSA_private_decrypt': Since OpenSSL 3.0
+C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\Source.cpp(130,21): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\Source.cpp(151,9): warning C4996: 'RSA_free': Since OpenSSL 3.0
+C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\Source.cpp(155,5): warning C4996: 'RSA_free': Since OpenSSL 3.0
+C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\Source.cpp(163,9): warning C4996: 'RSA_free': Since OpenSSL 3.0
+C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\Source.cpp(167,5): warning C4996: 'RSA_free': Since OpenSSL 3.0
+     Creating library C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\x64\Debug\ExempluRSA.lib and object C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\x64\Debug\ExempluRSA.exp
+  ExempluRSA.vcxproj -> C:\Users\Razvan\Desktop\GitHub\cpp-crypto-implementations\cpp-crypto-implementations\RSA-File-EncryptDecrypt\x64\Debug\ExempluRSA.exe
