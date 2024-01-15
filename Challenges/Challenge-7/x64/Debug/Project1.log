@@ -1,0 +1,4 @@
+﻿  Source.cpp
+D:\IDEs\Visual-Studio-2022\OpenSSL\Project1\Source.cpp(39,134): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+D:\IDEs\Visual-Studio-2022\OpenSSL\Project1\Source.cpp(62,135): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+  Project1.vcxproj -> D:\IDEs\Visual-Studio-2022\OpenSSL\Project1\x64\Debug\Project1.exe
