@@ -6,20 +6,56 @@ A repository dedicated to cryptographic operations and tools, implemented in C++
 
 This repository provides an extensive collection of cryptographic operations ranging from hashing and encryption to signature generation and verification, all implemented in C++.
 
-## Table of Contents
+# Cryptography Concepts Overview
 
-1. [Brute_Force_SHA256_Cracker](#brute_force_sha256_cracker)
-2. [AES_CBC_Encryption_Decryption](#aes_cbc_encryption_decryption)
-3. [AES_ECB_Encryption_Decryption](#aes_ecb_encryption_decryption)
-4. [DES_TripleDES_Encryption_Decryption](#des_tripledes_encryption_decryption)
-5. [SHA1_FileHashing_OpenSSL](#sha1_filehashing_openssl)
-6. [SHA256_FileHashing_OpenSSL](#sha256_filehashing_openssl)
-7. [HMAC_SHA256_OpenSSL](#hmac_sha256_openssl)
-8. [MD5_FileHashing_OpenSSL](#md5_filehashing_openssl)
-9. [RSA_File_EncryptDecrypt](#rsa_file_encryptdecrypt)
-10. [RSA_Signature_CertGen](#rsa_signature_certgen)
-11. [ECDSA_Sample_OpenSSL](#ecdsa_sample_openssl)
-12. [ECDSA_Signature_OpenSSL](#ecdsa_signature_openssl)
+This document provides an overview of several key cryptographic and data handling concepts discussed in a conversation about securing and managing data effectively in software applications.
+
+## Table of Contents
+- [AES (Advanced Encryption Standard)](#aes-advanced-encryption-standard)
+- [RSA (Rivest–Shamir–Adleman)](#rsa-rivestshamiradleman)
+- [PBE (Password-Based Encryption)](#pbe-password-based-encryption)
+- [PBKDF2 (Password-Based Key Derivation Function 2)](#pbkdf2-password-based-key-derivation-function-2)
+- [OTP (One-Time Password)](#otp-one-time-password)
+- [SecureRandom](#securerandom)
+- [ECDSA (Elliptic Curve Digital Signature Algorithm)](#ecdsa-elliptic-curve-digital-signature-algorithm)
+- [HMAC (Hash-Based Message Authentication Code)](#hmac-hash-based-message-authentication-code)
+- [Encoding vs Encryption vs Hashing vs Obfuscation](#encoding-vs-encryption-vs-hashing-vs-obfuscation)
+
+## AES (Advanced Encryption Standard)
+AES is a symmetric encryption algorithm used widely for secure data encryption. It is known for its efficiency and strong security credentials, supporting key sizes of 128, 192, or 256 bits.
+
+### Modes of AES
+- **AES-ECB (Electronic Codebook Mode)**: Simple but vulnerable to pattern analysis.
+- **AES-CBC (Cipher Block Chaining Mode)**: Encrypts blocks of plaintext with XOR operations, using a previous ciphertext block.
+
+## RSA (Rivest–Shamir–Adleman)
+RSA is an asymmetric cryptographic algorithm used for secure data transmission, utilizing a pair of keys (public and private) to encrypt and decrypt data.
+
+## PBE (Password-Based Encryption)
+This method uses passwords to derive cryptographic keys, combining the password with a salt and a repetition count to generate a key for data encryption.
+
+## PBKDF2 (Password-Based Key Derivation Function 2)
+A method that applies a pseudorandom function to derive a key from a password, using a salt and multiple iterations to enhance security against brute-force attacks.
+
+## OTP (One-Time Password)
+OTP is a password that is valid for only one login session or transaction, commonly used in two-factor authentication systems.
+
+## SecureRandom
+`SecureRandom` is a class used in programming to generate cryptographically strong random numbers or keys.
+
+## ECDSA (Elliptic Curve Digital Signature Algorithm)
+A variant of the Digital Signature Algorithm which uses elliptic curve cryptography to create digital signatures.
+
+## HMAC (Hash-Based Message Authentication Code)
+A construction for calculating a message authentication code using a cryptographic hash function and a secret key, providing data integrity and authenticity.
+
+## Encoding vs Encryption vs Hashing vs Obfuscation
+- **Encoding**: Converts data into a different format for interoperability (not secure).
+- **Encryption**: Secures data by making it unreadable without the correct key (secure).
+- **Hashing**: Transforms data into a fixed-size string to check data integrity (irreversible).
+- **Obfuscation**: Makes software difficult to understand to protect against reverse engineering (partially reversible).
+
+This README is designed to be a quick reference guide for understanding these important concepts and applying them in software development for data security and management.
 
 ## Features
 
